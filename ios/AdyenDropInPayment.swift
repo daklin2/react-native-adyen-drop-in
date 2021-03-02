@@ -39,6 +39,8 @@ class AdyenDropInPayment: RCTEventEmitter {
       "onPaymentSubmit",
     ]
   }
+    
+    private var presentingController: UIViewController?
 }
 
 extension AdyenDropInPayment: DropInComponentDelegate {
@@ -81,8 +83,12 @@ extension AdyenDropInPayment: DropInComponentDelegate {
     dropInComponent.delegate = self
     dropInComponent.environment = self.env!
 
+    
     dispatch {
-      UIApplication.shared.delegate?.window??.rootViewController!.present(dropInComponent.viewController, animated: true)
+        if let controller = UIApplication.getTopViewController() {
+            self.presentingController = controller
+            controller.present(dropInComponent.viewController, animated: true)
+        }
     }
   }
 
@@ -319,8 +325,11 @@ extension AdyenDropInPayment: ActionComponentDelegate {
   }
 
   @objc func handlePaymentResult(_ paymentResult: String) {
+    
     dispatch {
-        UIApplication.shared.delegate?.window??.rootViewController!.dismiss(animated: true)
+        if let controller = self.presentingController {
+            controller.dismiss(animated: true, completion: nil)
+        }
     }
   }
 
@@ -358,4 +367,23 @@ extension AdyenDropInPayment: ActionComponentDelegate {
       ]
     )
   }
+}
+
+
+extension  UIApplication {
+    
+    
+    class func getTopViewController(base: UIViewController? = UIApplication.shared.keyWindow?.rootViewController) -> UIViewController? {
+
+        if let nav = base as? UINavigationController {
+            return getTopViewController(base: nav.visibleViewController)
+
+        } else if let tab = base as? UITabBarController, let selected = tab.selectedViewController {
+            return getTopViewController(base: selected)
+
+        } else if let presented = base?.presentedViewController {
+            return getTopViewController(base: presented)
+        }
+        return base
+    }
 }
