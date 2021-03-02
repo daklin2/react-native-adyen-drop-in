@@ -87,7 +87,6 @@ extension AdyenDropInPayment: DropInComponentDelegate {
   }
 
   func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-    component.viewController.dismiss(animated: true)
     var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
     paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
     let resultData = ["paymentMethod": paymentMethodMap, "storePaymentMethod": data.storePaymentMethod] as [String: Any]
@@ -284,7 +283,9 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     if(self.isDropIn!){
         let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
         let action = try? JSONDecoder().decode(Action.self, from: actionData!)
-        dropInComponent?.handle(action!)
+        DispatchQueue.main.sync {
+            self.dropInComponent?.handle(action!)
+        }
       return;
     }
     let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
@@ -316,7 +317,11 @@ extension AdyenDropInPayment: ActionComponentDelegate {
       break;
     }
   }
+
   @objc func handlePaymentResult(_ paymentResult: String) {
+    dispatch {
+        UIApplication.shared.delegate?.window??.rootViewController!.dismiss(animated: true)
+    }
   }
 
   /// Invoked when the action component finishes
