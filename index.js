@@ -40,50 +40,6 @@ export default {
     this._validateParam(paymentMethodJson, "paymentMethods", "string");
     return AdyenDropIn.paymentMethods(paymentMethodJson);
   },
-  cardPaymentMethod(
-    paymentMethodJson,
-    name,
-    showHolderField,
-    showStoreField,
-    buttonTitle
-  ) {
-    if (typeof paymentMethodJson === "object") {
-      paymentMethodJson = JSON.stringify(paymentMethodJson);
-    }
-    this._validateParam(paymentMethodJson, "cardPaymentMethod", "string");
-    showHolderField = showHolderField || false;
-    showStoreField = showStoreField || false;
-    buttonTitle = buttonTitle || "";
-    return AdyenDropIn.cardPaymentMethod(
-      paymentMethodJson,
-      name,
-      showHolderField,
-      showStoreField,
-      buttonTitle
-    );
-  },
-
-  /**
-   * use card paymentMethod
-   * @param paymentMethodJson
-   * @returns {*}
-   */
-  storedCardPaymentMethod(paymentMethodJson, index) {
-    if (typeof paymentMethodJson === "object") {
-      paymentMethodJson = JSON.stringify(paymentMethodJson);
-    }
-    this._validateParam(paymentMethodJson, "storedCardPaymentMethod", "string");
-    index = index || 0;
-    return AdyenDropIn.storedCardPaymentMethod(paymentMethodJson, index);
-  },
-  contractPaymentMethod(paymentMethodJson, index) {
-    if (typeof paymentMethodJson === "object") {
-      paymentMethodJson = JSON.stringify(paymentMethodJson);
-    }
-    this._validateParam(paymentMethodJson, "contractPaymentMethod", "string");
-    index = index || 0;
-    return AdyenDropIn.contractPaymentMethod(paymentMethodJson, index);
-  },
   /**
    * handle Action from payments
    * @param actionJson

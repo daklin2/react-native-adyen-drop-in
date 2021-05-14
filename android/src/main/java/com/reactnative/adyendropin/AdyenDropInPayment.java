@@ -16,7 +16,7 @@ import com.adyen.checkout.base.PaymentComponentState;
 import com.adyen.checkout.base.component.BaseActionComponent;
 import com.adyen.checkout.base.model.PaymentMethodsApiResponse;
 import com.adyen.checkout.base.model.paymentmethods.PaymentMethod;
-import com.adyen.checkout.base.model.paymentmethods.RecurringDetail;
+import com.adyen.checkout.base.model.paymentmethods.StoredPaymentMethod;
 import com.adyen.checkout.base.model.payments.request.PaymentMethodDetails;
 import com.adyen.checkout.base.model.payments.response.Action;
 import com.adyen.checkout.base.model.payments.response.QrCodeAction;
@@ -182,38 +182,6 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         promise.resolve(resultMap);
     }
 
-
-    @ReactMethod
-    public void cardPaymentMethod(String paymentMethodsJson, String name, Boolean showHolderField, Boolean showStoreField, String buttonTitle) {
-        isDropIn = false;
-        final AdyenDropInPayment adyenDropInPayment = this;
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(paymentMethodsJson);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        CardConfiguration cardConfiguration =
-                new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey).setHolderNameRequire(showHolderField).setShowStorePaymentField(showStoreField)
-                        .build();
-        this.cardConfiguration = cardConfiguration;
-        PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
-        final PaymentMethod paymentMethod = adyenDropInPayment.getCardPaymentMethod(paymentMethodsApiResponse, name);
-        this.getCurrentActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final CardComponent cardComponent = new CardComponent(paymentMethod, cardConfiguration);
-                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment, buttonTitle);
-                cardComponentDialogFragment.setPaymentMethod(paymentMethod);
-                cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
-                cardComponentDialogFragment.setComponent(cardComponent);
-                cardComponentDialogFragment.setCancelable(true);
-                cardComponentDialogFragment.setShowsDialog(true);
-                cardComponentDialogFragment.show(((FragmentActivity) adyenDropInPayment.getCurrentActivity()).getSupportFragmentManager());
-            }
-        });
-    }
-
     @ReactMethod
     public void contractPaymentMethod(String paymentMethodsJson, Integer index) {
         isDropIn = false;
@@ -226,7 +194,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         }
 
         PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
-        final RecurringDetail paymentMethod = this.getStoredCardPaymentMethod(paymentMethodsApiResponse, index);
+        final StoredPaymentMethod paymentMethod = this.getStoredCardPaymentMethod(paymentMethodsApiResponse, index);
         WritableMap eventData = new WritableNativeMap();
         WritableMap data = new WritableNativeMap();
 
@@ -241,39 +209,6 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         eventData.putMap("data", data);
         this.sendEvent(this.getReactApplicationContext(), "onPaymentSubmit", eventData);
     }
-
-    @ReactMethod
-    public void storedCardPaymentMethod(String paymentMethodsJson, Integer index) {
-        isDropIn = false;
-        final AdyenDropInPayment adyenDropInPayment = this;
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(paymentMethodsJson);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
-        CardConfiguration cardConfiguration =
-                new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey)
-                        .build();
-        this.cardConfiguration = cardConfiguration;
-        RecurringDetail paymentMethod = this.getStoredCardPaymentMethod(paymentMethodsApiResponse, index);
-        this.getCurrentActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final CardComponent cardComponent = new CardComponent(paymentMethod, cardConfiguration);
-                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment);
-                cardComponentDialogFragment.setPaymentMethod(paymentMethod);
-                cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
-                cardComponentDialogFragment.setComponent(cardComponent);
-                cardComponentDialogFragment.setCancelable(true);
-                cardComponentDialogFragment.setShowsDialog(true);
-                cardComponentDialogFragment.show(((FragmentActivity) adyenDropInPayment.getCurrentActivity()).getSupportFragmentManager());
-
-            }
-        });
-    }
-
 
     @ReactMethod
     public void handlePaymentResult(String paymentJson) {
@@ -473,9 +408,9 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         return null;
     }
 
-    RecurringDetail getStoredCardPaymentMethod(PaymentMethodsApiResponse
+    StoredPaymentMethod getStoredCardPaymentMethod(PaymentMethodsApiResponse
                                                        paymentMethodsApiResponse, Integer index) {
-        List<RecurringDetail> recurringDetailList = paymentMethodsApiResponse.getStoredPaymentMethods();
+        List<StoredPaymentMethod> recurringDetailList = paymentMethodsApiResponse.getStoredPaymentMethods();
         if (recurringDetailList == null || recurringDetailList.size() <= 0) {
             return null;
         }
