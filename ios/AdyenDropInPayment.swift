@@ -144,6 +144,18 @@ extension AdyenDropInPayment: DropInComponentDelegate {
       ]
     )
   }
+
+  func didCancel() {
+    sendEvent(
+      withName: "onPaymentFail",
+      body: [
+        "isDropIn": self.isDropIn as Any,
+        "env": self.envName as Any,
+        "msg": "cancelled",
+        "error": "cancelled",
+      ]
+    )
+  }
 }
 
 extension AdyenDropInPayment: PaymentComponentDelegate {
