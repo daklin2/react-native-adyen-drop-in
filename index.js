@@ -11,9 +11,11 @@ const addListener = (key, listener) => {
   if (eventMap[key]) {
     return eventMap[key];
   }
-  eventMap[key] = listener;
-  EventEmitter.addListener(key, listener);
+  const eventEmitterListener = EventEmitter.addListener(key, listener);
+  eventMap[key] = eventEmitterListener;
+  return eventEmitterListener;
 };
+
 export default {
   /**
    * Starting payment process.
@@ -72,6 +74,11 @@ export default {
    */
   onPaymentProvide(mOnPaymentProvide) {
     this._validateParam(mOnPaymentProvide, "onPaymentProvide", "function");
+
+    if (onPaymentProvideListener) {
+      EventEmitter.removeListener(onPaymentProvideListener);
+      delete eventMap["onPaymentProvide"]
+    }
     onPaymentProvideListener = addListener("onPaymentProvide", e => {
       mOnPaymentProvide(e);
     });
@@ -101,6 +108,7 @@ export default {
     this._validateParam(mOnPaymentFail, "onPaymentFail", "function");
     if (onPaymentFailListener) {
       EventEmitter.removeListener(onPaymentFailListener);
+      delete eventMap["onPaymentFail"]
     }
     onPaymentFailListener = addListener("onPaymentFail", e => {
       mOnPaymentFail(e);
@@ -113,6 +121,7 @@ export default {
     this._validateParam(mOnPaymentSubmit, "onPaymentSubmit", "function");
     if (onPaymentSubmitListener) {
       EventEmitter.removeListener(onPaymentSubmitListener);
+      delete eventMap["onPaymentSubmit"]
     }
     onPaymentSubmitListener = addListener("onPaymentSubmit", e => {
       mOnPaymentSubmit(e);
@@ -137,16 +146,32 @@ export default {
   events: EventEmitter,
   removeListeners() {
     if (onPaymentProvideListener) {
+      onPaymentProvideListener.remove();
       EventEmitter.removeListener(onPaymentProvideListener);
     }
     if (onPaymentFailListener) {
+      onPaymentFailListener.remove();
       EventEmitter.removeListener(onPaymentFailListener);
     }
     if (onPaymentSubmitListener) {
+      onPaymentSubmitListener.remove();
       EventEmitter.removeListener(onPaymentSubmitListener);
     }
     if (onPaymentCancelListener) {
+      onPaymentCancelListener.remove();
       EventEmitter.removeListener(onPaymentCancelListener);
+    }
+
+    if (eventMap["onPaymentProvide"]) {
+      delete eventMap["onPaymentProvide"]
+    }
+
+    if (eventMap["onPaymentFail"]) {
+      delete eventMap["onPaymentFail"]
+    }
+
+    if (eventMap["onPaymentSubmit"]) {
+      delete eventMap["onPaymentSubmit"]
     }
   }
 };
