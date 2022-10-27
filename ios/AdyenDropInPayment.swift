@@ -99,13 +99,15 @@ extension AdyenDropInPayment: DropInComponentDelegate {
   }
     
     func didSubmit(_ data: PaymentComponentData, for paymentMethod: PaymentMethod, from component: DropInComponent) {
-//        var paymentMethodMap: Dictionary? = data.paymentMethod
-//        paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
+        let jsonData = try? JSONEncoder().encode(data.paymentMethod.encodable)
+        var paymentMethodDictionaryData = try? JSONSerialization.jsonObject(with: jsonData!, options: .mutableContainers) as? [String:AnyObject]
+        
+        paymentMethodDictionaryData!["recurringDetailReference"] = paymentMethodDictionaryData!["storedPaymentMethodId"]
         let resultData = [
-            "paymentMethod": data.paymentMethod,
+            "paymentMethod": paymentMethodDictionaryData,
             "storePaymentMethod": data.storePaymentMethod
         ] as [String: Any]
-        
+
         sendEvent(
           withName: "onPaymentSubmit",
           body: [
@@ -127,7 +129,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
       
       if let paymentDetails = details {
         let resultData = [
-            "details": details,
+            "details": paymentDetails,
             "paymentData": data.paymentData
         ] as [String: Any]
         
