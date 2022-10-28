@@ -10,29 +10,28 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
 
 import com.adyen.checkout.adyen3ds2.Adyen3DS2Component;
-import com.adyen.checkout.base.ActionComponentData;
-import com.adyen.checkout.base.ComponentError;
-import com.adyen.checkout.base.PaymentComponentState;
-import com.adyen.checkout.base.component.BaseActionComponent;
-import com.adyen.checkout.base.model.PaymentMethodsApiResponse;
-import com.adyen.checkout.base.model.paymentmethods.PaymentMethod;
-import com.adyen.checkout.base.model.paymentmethods.StoredPaymentMethod;
-import com.adyen.checkout.base.model.payments.request.PaymentMethodDetails;
-import com.adyen.checkout.base.model.payments.response.Action;
-import com.adyen.checkout.base.model.payments.response.QrCodeAction;
-import com.adyen.checkout.base.model.payments.response.RedirectAction;
-import com.adyen.checkout.base.model.payments.response.Threeds2ChallengeAction;
-import com.adyen.checkout.base.model.payments.response.Threeds2FingerprintAction;
-import com.adyen.checkout.base.model.payments.response.VoucherAction;
-import com.adyen.checkout.card.CardComponent;
+import com.adyen.checkout.components.ActionComponentData;
+import com.adyen.checkout.components.ComponentError;
+import com.adyen.checkout.components.PaymentComponentState;
+import com.adyen.checkout.components.base.BaseActionComponent;
+import com.adyen.checkout.components.model.PaymentMethodsApiResponse;
+import com.adyen.checkout.components.model.paymentmethods.PaymentMethod;
+import com.adyen.checkout.components.model.paymentmethods.StoredPaymentMethod;
+import com.adyen.checkout.components.model.payments.request.PaymentMethodDetails;
+import com.adyen.checkout.components.model.payments.response.Action;
+import com.adyen.checkout.components.model.payments.response.QrCodeAction;
+import com.adyen.checkout.components.model.payments.response.RedirectAction;
+import com.adyen.checkout.components.model.payments.response.Threeds2ChallengeAction;
+import com.adyen.checkout.components.model.payments.response.Threeds2FingerprintAction;
+import com.adyen.checkout.components.model.payments.response.VoucherAction;
 import com.adyen.checkout.card.CardConfiguration;
 import com.adyen.checkout.core.api.Environment;
-import com.adyen.checkout.cse.Card;
+import com.adyen.checkout.cse.CardEncrypter;
 import com.adyen.checkout.cse.EncryptedCard;
-import com.adyen.checkout.cse.Encryptor;
+import com.adyen.checkout.cse.UnencryptedCard;
 import com.adyen.checkout.dropin.DropIn;
 import com.adyen.checkout.dropin.DropInConfiguration;
-import com.adyen.checkout.dropin.service.CallResult;
+import com.adyen.checkout.dropin.service.DropInServiceResult;
 import com.adyen.checkout.redirect.RedirectComponent;
 import com.adyen.checkout.redirect.RedirectUtil;
 import com.facebook.react.bridge.*;
@@ -124,7 +123,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void configPayment(String publicKey, String env) {
-        this.publicKey = publicKey;
+        this.publicKey = "test_UV2LUSI7PZGGDEVR6ZEFJOAMVA5H5MYN";
         this.envName = env;
         if (env == null || env.trim().length() <= 0) {
             environment = Environment.TEST;
@@ -147,7 +146,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         this.cardConfiguration = cardConfiguration;
         Intent resultIntent = new Intent(this.getCurrentActivity(), this.getCurrentActivity().getClass());
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        this.dropInConfiguration = new DropInConfiguration.Builder(this.getCurrentActivity(), resultIntent, AdyenDropInPaymentService.class).addCardConfiguration(cardConfiguration).build();
+        this.dropInConfiguration = new DropInConfiguration.Builder(this.getCurrentActivity(), AdyenDropInPaymentService.class, "test_UV2LUSI7PZGGDEVR6ZEFJOAMVA5H5MYN").addCardConfiguration(cardConfiguration).build();
         JSONObject jsonObject = null;
         try {
             Log.i("string", paymentMethodsJson);
@@ -161,21 +160,21 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
             @Override
             public void run() {
-                DropIn.startPayment(adyenDropInPayment.getCurrentActivity(), paymentMethodsApiResponse, dropInConfiguration);
+                DropIn.startPayment(adyenDropInPayment.getCurrentActivity(), paymentMethodsApiResponse, dropInConfiguration, resultIntent);
             }
         });
 
     }
 
     @ReactMethod
-    public void encryptCard(String cardNumber, Integer expiryMonth, Integer expiryYear, String securityCode, final Promise promise) {
-        Card.Builder cardBuilder = new Card.Builder();
-        cardBuilder.setNumber(cardNumber).setExpiryDate(expiryMonth, expiryYear);
-        cardBuilder.setSecurityCode(securityCode);
-        Card card = cardBuilder.build();
-        final EncryptedCard encryptedCard = Encryptor.INSTANCE.encryptFields(card, this.publicKey);
+    public void encryptCard(String cardNumber, String expiryMonth, String expiryYear, String securityCode, final Promise promise) {
+        UnencryptedCard.Builder cardBuilder = new UnencryptedCard.Builder();
+        cardBuilder.setNumber(cardNumber).setExpiryMonth(expiryMonth).setExpiryYear(expiryYear);
+        cardBuilder.setCvc(securityCode);
+        UnencryptedCard card = cardBuilder.build();
+        final EncryptedCard encryptedCard = CardEncrypter.encryptFields(card, this.publicKey);
         WritableMap resultMap = new WritableNativeMap();
-        resultMap.putString("encryptedNumber", encryptedCard.getEncryptedNumber());
+        resultMap.putString("encryptedNumber", encryptedCard.getEncryptedCardNumber());
         resultMap.putString("encryptedExpiryMonth", encryptedCard.getEncryptedExpiryMonth());
         resultMap.putString("encryptedExpiryYear", encryptedCard.getEncryptedExpiryYear());
         resultMap.putString("encryptedSecurityCode", "20" + encryptedCard.getEncryptedSecurityCode());
@@ -213,8 +212,8 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     @ReactMethod
     public void handlePaymentResult(String paymentJson) {
         if (isDropIn) {
-            CallResult callResult = new CallResult(CallResult.ResultType.FINISHED, paymentJson);
-            dropInService.handleAsyncCallback(callResult);
+            DropInServiceResult callResult = new DropInServiceResult.Finished(paymentJson);
+            dropInService.handleResult(callResult);
             return;
         }
     }
@@ -223,7 +222,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         initActionComponents(this.getReactApplicationContext());
         Uri data = intent.getData();
         if (data != null && data.toString().startsWith(RedirectUtil.REDIRECT_RESULT_SCHEME)) {
-            redirectComponent.handleRedirectResponse(data);
+            redirectComponent.handleIntent(intent);
         }
     }
 
@@ -242,19 +241,19 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         BaseActionComponent actionComponent = null;
         switch (action.getType()) {
             case RedirectAction.ACTION_TYPE:
-                actionComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                actionComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), redirectComponent.getConfiguration());
                 break;
             case Threeds2FingerprintAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
                 break;
             case Threeds2ChallengeAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
                 break;
             case QrCodeAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
                 break;
             case VoucherAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
                 break;
             default:
                 break;
@@ -273,7 +272,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         final AdyenDropInPayment adyenDropInPayment = this;
         FragmentActivity currentActivity = (FragmentActivity) reactContext.getCurrentActivity();
         if (redirectComponent == null) {
-            redirectComponent = RedirectComponent.PROVIDER.get(currentActivity);
+            redirectComponent = RedirectComponent.PROVIDER.get(currentActivity, getCurrentActivity().getApplication(), redirectComponent.getConfiguration());
             redirectComponent.observe(currentActivity, new Observer<ActionComponentData>() {
 
                 @Override
@@ -289,7 +288,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             });
         }
         if (adyen3DS2Component == null) {
-            adyen3DS2Component = Adyen3DS2Component.PROVIDER.get(currentActivity);
+            adyen3DS2Component = Adyen3DS2Component.PROVIDER.get(currentActivity, getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
             adyen3DS2Component.observe(currentActivity, new Observer<ActionComponentData>() {
 
                 @Override
@@ -310,8 +309,8 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     public void handleAction(String actionJson) {
 
         if (isDropIn) {
-            CallResult callResult = new CallResult(CallResult.ResultType.ACTION, actionJson);
-            dropInService.handleAsyncCallback(callResult);
+            DropInServiceResult callResult = new DropInServiceResult.Action(actionJson);
+            dropInService.handleResult(callResult);
             return;
         }
         if (actionJson == null || actionJson.length() <= 0) {
