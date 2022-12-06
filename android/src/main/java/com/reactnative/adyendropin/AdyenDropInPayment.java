@@ -10,6 +10,7 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
 
 import com.adyen.checkout.adyen3ds2.Adyen3DS2Component;
+import com.adyen.checkout.adyen3ds2.Adyen3DS2Configuration;
 import com.adyen.checkout.components.ActionComponentData;
 import com.adyen.checkout.components.ComponentError;
 import com.adyen.checkout.components.PaymentComponentState;
@@ -33,6 +34,7 @@ import com.adyen.checkout.dropin.DropIn;
 import com.adyen.checkout.dropin.DropInConfiguration;
 import com.adyen.checkout.dropin.service.DropInServiceResult;
 import com.adyen.checkout.redirect.RedirectComponent;
+import com.adyen.checkout.redirect.RedirectConfiguration;
 import com.adyen.checkout.redirect.RedirectUtil;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
@@ -235,25 +237,31 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     BaseActionComponent getActionComponent(Action action) {
+        RedirectConfiguration redirectConfiguration = new RedirectConfiguration.Builder(this.getReactApplicationContext(), this.publicKey)
+                .setEnvironment(environment)
+                .build();
+        Adyen3DS2Configuration threeds2Configuration = new Adyen3DS2Configuration.Builder(this.getReactApplicationContext(), this.publicKey)
+                .setEnvironment(environment)
+                .build();
         if (ACTION_COMPONENT_MAP.containsKey(action.getType())) {
             return ACTION_COMPONENT_MAP.get(action.getType());
         }
         BaseActionComponent actionComponent = null;
         switch (action.getType()) {
             case RedirectAction.ACTION_TYPE:
-                actionComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), redirectComponent.getConfiguration());
+                actionComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), redirectConfiguration);
                 break;
             case Threeds2FingerprintAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), threeds2Configuration);
                 break;
             case Threeds2ChallengeAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), threeds2Configuration);
                 break;
             case QrCodeAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), threeds2Configuration);
                 break;
             case VoucherAction.ACTION_TYPE:
-                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity(), getCurrentActivity().getApplication(), threeds2Configuration);
                 break;
             default:
                 break;
@@ -269,10 +277,16 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     void initActionComponents(ReactApplicationContext reactContext) {
+        RedirectConfiguration redirectConfiguration = new RedirectConfiguration.Builder(this.getReactApplicationContext(), this.publicKey)
+                .setEnvironment(environment)
+                .build();
+        Adyen3DS2Configuration threeds2Configuration = new Adyen3DS2Configuration.Builder(this.getReactApplicationContext(), this.publicKey)
+                .setEnvironment(environment)
+                .build();
         final AdyenDropInPayment adyenDropInPayment = this;
         FragmentActivity currentActivity = (FragmentActivity) reactContext.getCurrentActivity();
         if (redirectComponent == null) {
-            redirectComponent = RedirectComponent.PROVIDER.get(currentActivity, getCurrentActivity().getApplication(), redirectComponent.getConfiguration());
+            redirectComponent = RedirectComponent.PROVIDER.get(currentActivity, getCurrentActivity().getApplication(), redirectConfiguration);
             redirectComponent.observe(currentActivity, new Observer<ActionComponentData>() {
 
                 @Override
@@ -288,7 +302,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             });
         }
         if (adyen3DS2Component == null) {
-            adyen3DS2Component = Adyen3DS2Component.PROVIDER.get(currentActivity, getCurrentActivity().getApplication(), adyen3DS2Component.getConfiguration());
+            adyen3DS2Component = Adyen3DS2Component.PROVIDER.get(currentActivity, getCurrentActivity().getApplication(), threeds2Configuration);
             adyen3DS2Component.observe(currentActivity, new Observer<ActionComponentData>() {
 
                 @Override
@@ -306,10 +320,11 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void handleAction(String actionJson) {
+    public void handleAction(String actionJson) throws JSONException {
 
         if (isDropIn) {
-            DropInServiceResult callResult = new DropInServiceResult.Action(actionJson);
+            Action action = Action.SERIALIZER.deserialize(new JSONObject(actionJson));
+            DropInServiceResult callResult = new DropInServiceResult.Action(action);
             dropInService.handleResult(callResult);
             return;
         }

@@ -1,11 +1,13 @@
 package com.reactnative.adyendropin;
 
 import android.content.Intent;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import com.adyen.checkout.components.ActionComponentData;
 import com.adyen.checkout.components.PaymentComponentState;
+import com.adyen.checkout.components.model.payments.response.Action;
 import com.adyen.checkout.dropin.service.DropInService;
 import com.adyen.checkout.dropin.service.DropInServiceResult;
 
@@ -35,9 +37,8 @@ public class AdyenDropInPaymentService extends DropInService {
             sendResult(res);
         }
         if (AdyenDropInPayment.INSTANCE != null) {
-            AdyenDropInPayment.INSTANCE.handlePaymentProvide(ActionComponentData.SERIALIZER.deserialize(actionComponentJson));
+            AdyenDropInPayment.INSTANCE.handlePaymentProvide(actionComponentData);
         }
-        sendResult(handleResponse(actionComponentJson));
     }
 
     protected void handleResult (DropInServiceResult result) {
@@ -46,10 +47,11 @@ public class AdyenDropInPaymentService extends DropInService {
 
     protected DropInServiceResult handleResponse (JSONObject jsonObject) {
         DropInServiceResult result;
+        Action action = Action.SERIALIZER.deserialize(jsonObject);
         if (jsonObject == null) {
             result = new DropInServiceResult.Error();
         } else if (isAction(jsonObject)) {
-            result = new DropInServiceResult.Action(jsonObject.toString());
+            result = new DropInServiceResult.Action(action);
         } else {
             result = new DropInServiceResult.Finished(jsonObject.toString());
         }

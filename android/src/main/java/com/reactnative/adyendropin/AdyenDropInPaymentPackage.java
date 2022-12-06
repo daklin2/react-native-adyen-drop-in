@@ -12,12 +12,18 @@ import java.util.Collections;
 import java.util.List;
 
 public class AdyenDropInPaymentPackage implements ReactPackage {
+    private AdyenDropInPayment adyenDropInPayment;
     @NonNull
     @Override
     public List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
+        adyenDropInPayment = new AdyenDropInPayment(reactContext);
         return Arrays.asList(new NativeModule[]{
-                new AdyenDropInPayment(reactContext),
+                adyenDropInPayment,
         });
+    }
+
+    public AdyenDropInPayment getAdyenDropInPayment() {
+        return adyenDropInPayment;
     }
 
     @NonNull
