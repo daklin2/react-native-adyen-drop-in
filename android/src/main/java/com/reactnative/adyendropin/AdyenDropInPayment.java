@@ -125,7 +125,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void configPayment(String publicKey, String env) {
-        this.publicKey = "test_UV2LUSI7PZGGDEVR6ZEFJOAMVA5H5MYN";
+        this.publicKey = publicKey;
         this.envName = env;
         if (env == null || env.trim().length() <= 0) {
             environment = Environment.TEST;
