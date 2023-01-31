@@ -3,15 +3,22 @@ import { NativeEventEmitter, NativeModules, Platfrom } from "react-native";
 const AdyenDropIn = NativeModules.AdyenDropInPayment;
 const EventEmitter = new NativeEventEmitter(AdyenDropIn);
 const eventMap = {};
-const addListener = (key, listener) => {
+
+const removeListener = (key) => {
   if (eventMap[key]) {
-    EventEmitter.removeSubscription(eventMap[key]);
+    eventMap[key].remove();
     delete eventMap[key]
   }
+}
+
+const addListener = (key, listener) => {
+  removeListener(key);
+
   const eventEmitterSubscription = EventEmitter.addListener(key, listener);
   eventMap[key] = eventEmitterSubscription;
   return eventEmitterSubscription;
 };
+
 
 export default {
   /**
@@ -132,19 +139,8 @@ export default {
   },
   events: EventEmitter,
   removeListeners() {
-    if (eventMap["onPaymentProvide"]) {
-      EventEmitter.removeSubscription(eventMap["onPaymentProvide"]);
-      delete eventMap["onPaymentProvide"]
-    }
-
-    if (eventMap["onPaymentFail"]) {
-      EventEmitter.removeSubscription(eventMap["onPaymentFail"]);
-      delete eventMap["onPaymentFail"]
-    }
-
-    if (eventMap["onPaymentSubmit"]) {
-      EventEmitter.removeSubscription(eventMap["onPaymentSubmit"]);
-      delete eventMap["onPaymentSubmit"]
-    }
+    Object.keys(eventMap).forEach((key) => {
+      removeListener(key)
+    }) 
   }
 };
