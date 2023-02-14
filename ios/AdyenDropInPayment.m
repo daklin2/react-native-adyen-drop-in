@@ -17,7 +17,13 @@
   return YES;
 }
 //init payment config
-RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env showsStorePaymentMethodField:(BOOL) showsStorePaymentMethodField)
+RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env showsStorePaymentMethodField:(BOOL) showsStorePaymentMethodField merchantIdentifier:(NSString) merchantIdentifier)
+
+/**
+  config displayed Payment ammount (required for ApplePay)
+ */
+RCT_EXTERN_METHOD(setPaymentAmount:(NSString)totalValue currencyIso:(NSString *) currencyIso countryCode:(NSString *) countryCode)
+
 /**
   select paymentMethods and pay
  */
