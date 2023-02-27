@@ -20,6 +20,11 @@
 RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env showsStorePaymentMethodField:(BOOL) showsStorePaymentMethodField merchantIdentifier:(NSString) merchantIdentifier)
 
 /**
+  set summary item in ApplePay component (required for ApplePay)
+ */
+RCT_EXTERN_METHOD(setApplePayPaymentSummaryItem:(NSString)totalValue label:(NSString *) label)
+
+/**
   config displayed Payment ammount (required for ApplePay)
  */
 RCT_EXTERN_METHOD(setPaymentAmount:(NSString)totalValue currencyIso:(NSString *) currencyIso countryCode:(NSString *) countryCode)

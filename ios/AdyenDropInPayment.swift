@@ -11,12 +11,6 @@ import Foundation
 import SafariServices
 import PassKit
 
-//class ApplePayCoqmponent: ApplePayComponent {
-//    func didFinalize() {
-//        print("finalize")
-//    }
-//}
-
 @objc(AdyenDropInPayment)
 class AdyenDropInPayment: RCTEventEmitter {
   func dispatch(_ closure: @escaping () -> Void) {
@@ -61,12 +55,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
       self.merchantIdentifier = merchantIdentifier
       envName = env
       
-      let summaryItems = [
-        PKPaymentSummaryItem(label: "Jeans", amount: 478.99, type: .final),
-      ]
-      let applePayConfiguration = ApplePayComponent.Configuration(summaryItems: summaryItems,
-                                                                    merchantIdentifier: merchantIdentifier)
-
+      let applePayConfiguration = ApplePayComponent.Configuration(summaryItems: [], merchantIdentifier: merchantIdentifier)
         
       switch env {
         case "live":
@@ -81,21 +70,19 @@ extension AdyenDropInPayment: DropInComponentDelegate {
       configuration?.applePay = applePayConfiguration
     }
 
-  @objc func setPaymentAmount(_ totalValue: String, currencyIso: String, countryCode: String) {
+    @objc func setApplePayPaymentSummaryItem(_ totalValue: String, label: String) {
+      let decimalValue = Decimal(Double(totalValue) ?? 0)
+      let summaryItems = [
+          PKPaymentSummaryItem(label: label, amount: decimalValue as NSDecimalNumber, type: .final),
+      ]
+      self.configuration?.applePay?.summaryItems = summaryItems
+    }
+    
+    @objc func setPaymentAmount(_ totalValue: String, currencyIso: String, countryCode: String) {
       let decimalValue = Decimal(Double(totalValue) ?? 0)
       let payment = Payment(amount: Amount(value: decimalValue , currencyCode: currencyIso),
                                   countryCode: countryCode)
-      let summaryItems = [
-        PKPaymentSummaryItem(label: "Groceries", amount: decimalValue as NSDecimalNumber, type: .final),
-      ]
-      self.configuration?.applePay?.summaryItems = summaryItems
-        
-//        let summaryItems = [
-//                             PKPaymentSummaryItem(label: "Jeans", amount: 478.99, type: .final),
-//                           ]
-      
-      print(payment.amount)
-        self.configuration?.payment = payment
+      self.configuration?.payment = payment
     }
     
    @objc func encryptCard(_ cardNumber: String,expiryMonth:Int, expiryYear:Int,securityCode:String,resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock)  {
@@ -122,8 +109,6 @@ extension AdyenDropInPayment: DropInComponentDelegate {
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
     
-//      print(paymentMethods.unsafelyUnwrapped)
-//      print(self.configuration?.paymentMethodsList)
     let dropInComponent = DropInComponent(paymentMethods: paymentMethods!, configuration: self.configuration!)
     self.dropInComponent = dropInComponent
     dropInComponent.delegate = self
@@ -285,15 +270,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
   }
 }
 
-extension AdyenDropInPayment: ActionComponentDelegate {
-    func didOpenExternalApplication(from component: ActionComponent) {
-     print("dsads")
-    }
-    
-    func didComplete(from component: ActionComponent) {
-        
-    }
-    
+extension AdyenDropInPayment: ActionComponentDelegate {    
   @objc func handleAction(_ actionJson: String) {
     if(actionJson == nil||actionJson.count<=0){
         return;

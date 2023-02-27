@@ -34,6 +34,16 @@ export default {
   },
 
   /**
+   * set summary item in ApplePay component (required for ApplePay)
+   * @returns {*}
+   */
+  setApplePayPaymentSummaryItem(totalValue, label) {
+    if (Platform.OS === 'ios') {
+      return AdyenDropIn.setApplePayPaymentSummaryItem(totalValue, label);
+    }
+  },
+
+  /**
    * Configuring displayed Payment ammount (required for ApplePay).
    * @returns {*}
    */
