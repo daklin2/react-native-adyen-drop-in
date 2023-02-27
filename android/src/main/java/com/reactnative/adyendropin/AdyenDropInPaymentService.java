@@ -1,12 +1,11 @@
 package com.reactnative.adyendropin;
 
-import android.content.Intent;
+import androidx.annotation.NonNull;
 
-import com.adyen.checkout.base.ActionComponentData;
-import com.adyen.checkout.base.PaymentComponentState;
-import com.adyen.checkout.base.model.payments.request.PaymentComponentData;
-import com.adyen.checkout.dropin.service.CallResult;
+import com.adyen.checkout.components.ActionComponentData;
+import com.adyen.checkout.components.PaymentComponentState;
 import com.adyen.checkout.dropin.service.DropInService;
+import com.adyen.checkout.dropin.service.DropInServiceResult;
 
 import org.json.JSONObject;
 
@@ -16,39 +15,31 @@ public class AdyenDropInPaymentService extends DropInService {
     }
 
     @Override
-    public CallResult makeDetailsCall(JSONObject jsonObject) {
-        if (jsonObject == null) {
-            return new CallResult(CallResult.ResultType.FINISHED, "");
+    protected void onPaymentsCallRequested(@NonNull PaymentComponentState<?> paymentComponentState, @NonNull JSONObject paymentComponentJson) {
+        if (paymentComponentJson == null) {
+            sendResult(new DropInServiceResult.Finished(""));
         }
-        if (AdyenDropInPayment.INSTANCE != null) {
-            AdyenDropInPayment.INSTANCE.handlePaymentProvide(ActionComponentData.SERIALIZER.deserialize(jsonObject));
-        }
-
-        return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
-    }
-
-    @Override
-    public CallResult makePaymentsCall(JSONObject jsonObject) {
-        if (jsonObject == null) {
-            return new CallResult(CallResult.ResultType.FINISHED, "");
-        }
-        PaymentComponentData paymentComponentData = PaymentComponentData.SERIALIZER.deserialize(jsonObject);
-        PaymentComponentState paymentComponentState = new PaymentComponentState(paymentComponentData, true);
         if (AdyenDropInPayment.INSTANCE != null) {
             AdyenDropInPayment.INSTANCE.handlePaymentSubmit(paymentComponentState);
         }
-
-        return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
     }
 
     @Override
-    protected void onHandleWork(Intent intent) {
-        super.onHandleWork(intent);
-
+    protected void onDetailsCallRequested(@NonNull ActionComponentData actionComponentData, @NonNull JSONObject actionComponentJson) {
+        if (actionComponentJson == null) {
+            DropInServiceResult res = new DropInServiceResult.Finished("");
+            sendResult(res);
+        }
+        if (AdyenDropInPayment.INSTANCE != null) {
+            AdyenDropInPayment.INSTANCE.handlePaymentProvide(actionComponentData);
+        }
     }
 
+    protected void handleResult (DropInServiceResult result) {
+        sendResult(result);
+    }
 
-    public void handleAsyncCallback(CallResult callResult) {
-        super.asyncCallback(callResult);
+    public boolean isAction (JSONObject jsonObject) {
+        return jsonObject.has("action");
     }
 }

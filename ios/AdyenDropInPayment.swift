@@ -108,7 +108,6 @@ extension AdyenDropInPayment: DropInComponentDelegate {
     self.isDropIn = true
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
-    
     let dropInComponent = DropInComponent(paymentMethods: paymentMethods!, configuration: self.configuration!)
     self.dropInComponent = dropInComponent
     dropInComponent.delegate = self
@@ -270,7 +269,11 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
   }
 }
 
-extension AdyenDropInPayment: ActionComponentDelegate {    
+extension AdyenDropInPayment: ActionComponentDelegate {
+    func didComplete(from component: ActionComponent) {
+        
+    }
+    
   @objc func handleAction(_ actionJson: String) {
     if(actionJson == nil||actionJson.count<=0){
         return;
