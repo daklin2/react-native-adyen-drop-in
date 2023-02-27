@@ -195,10 +195,6 @@ extension AdyenDropInPayment: DropInComponentDelegate {
       ]
     )
   }
-    
-    func didOpenExternalApplication() {
-        print("didOpen")
-    }
 }
 
 extension AdyenDropInPayment: PaymentComponentDelegate {
